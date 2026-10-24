@@ -33,6 +33,9 @@ $usuario = usuarioActual();
     <?php if ($usuario): ?>
       <a class="nav-cta <?= $activo==='publicar.php'?'active':'' ?>" href="publicar.php">Publicar</a>
       <a class="<?= $activo==='mis_publicaciones.php'?'active':'' ?>" href="mis_publicaciones.php">Mis publicaciones</a>
+      <?php if (!empty($usuario["es_admin"])): ?>
+        <a class="<?= $activo==='admin.php'?'active':'' ?>" href="admin.php">Admin</a>
+      <?php endif; ?>
       <span class="nav-user">Hola, <?= e($usuario["nombre"]) ?></span>
       <a href="logout.php">Salir</a>
     <?php else: ?>

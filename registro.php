@@ -31,6 +31,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 "nombre" => $nombre,
                 "email" => $email,
                 "telefono" => $telefono,
+                "es_admin" => 0,
             ];
             guardarMensaje("Cuenta creada. ¡Ya puedes publicar!");
             header("Location: index.php");

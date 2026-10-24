@@ -8,20 +8,26 @@ $error = "";
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $email = trim($_POST["email"] ?? "");
     $pass = $_POST["password"] ?? "";
-    $stmt = $mysqli->prepare("SELECT id_usuario, nombre, email, password_hash, telefono FROM usuario WHERE email = ? LIMIT 1");
+    try {
+        $stmt = $mysqli->prepare("SELECT id_usuario, nombre, email, password_hash, telefono, es_admin FROM usuario WHERE email = ? LIMIT 1");
+    } catch (mysqli_sql_exception $e) {
+        $stmt = $mysqli->prepare("SELECT id_usuario, nombre, email, password_hash, telefono FROM usuario WHERE email = ? LIMIT 1");
+    }
     $stmt->bind_param("s", $email);
     $stmt->execute();
     $u = $stmt->get_result()->fetch_assoc();
     if ($u && password_verify($pass, $u["password_hash"])) {
         session_regenerate_id(true);
+        $esAdmin = (int)($u["es_admin"] ?? ($u["email"] === "admin@demo.com" ? 1 : 0));
         $_SESSION["usuario"] = [
             "id" => (int)$u["id_usuario"],
             "nombre" => $u["nombre"],
             "email" => $u["email"],
             "telefono" => $u["telefono"],
+            "es_admin" => $esAdmin,
         ];
         guardarMensaje("Bienvenido/a, " . $u["nombre"]);
-        header("Location: index.php");
+        header("Location: " . ($esAdmin ? "admin.php" : "index.php"));
         exit;
     }
     $error = "Correo o contraseña incorrectos.";

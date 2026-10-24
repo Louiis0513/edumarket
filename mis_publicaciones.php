@@ -16,14 +16,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && ($_POST["accion"] ?? "") === "elimi
     exit;
 }
 
+$stc = $mysqli->prepare("SELECT COUNT(*) AS total FROM articulo WHERE id_usuario=?");
+$stc->bind_param("i", $uid);
+$stc->execute();
+$total = (int)$stc->get_result()->fetch_assoc()["total"];
+$pag = calcularPaginacion($total, 8);
+
 $st = $mysqli->prepare(
     "SELECT a.*, c.nombre AS categoria
      FROM articulo a
      JOIN categoria c ON c.id_categoria = a.id_categoria
      WHERE a.id_usuario = ?
-     ORDER BY a.id_articulo DESC"
+     ORDER BY a.id_articulo DESC
+     LIMIT ? OFFSET ?"
 );
-$st->bind_param("i", $uid);
+$lim = $pag["por_pagina"];
+$off = $pag["offset"];
+$st->bind_param("iii", $uid, $lim, $off);
 $st->execute();
 $arts = $st->get_result()->fetch_all(MYSQLI_ASSOC);
 
@@ -38,13 +47,16 @@ require __DIR__ . "/includes/header.php";
     <a class="btn btn-primary" href="publicar.php">＋ Nuevo artículo</a>
   </div>
 
-  <?php if (!$arts): ?>
+  <?php if (!$arts && $total === 0): ?>
     <div class="empty-state">
       <h3>Aún no tienes publicaciones</h3>
       <p>Publica un útil escolar y empieza a recibir mensajes por WhatsApp.</p>
       <a class="btn btn-primary" href="publicar.php">Publicar ahora</a>
     </div>
   <?php else: ?>
+    <div class="results-meta">
+      <span><?= $total ?> publicación<?= $total === 1 ? '' : 'es' ?></span>
+    </div>
     <div class="pub-grid">
       <?php foreach ($arts as $a):
         $foto = fotoArticulo($a["foto_url"], $a["categoria"]);
@@ -78,6 +90,7 @@ require __DIR__ . "/includes/header.php";
         </article>
       <?php endforeach; ?>
     </div>
+    <?= renderPaginacion($pag) ?>
   <?php endif; ?>
 </main>
 <?php require __DIR__ . "/includes/footer.php"; ?>

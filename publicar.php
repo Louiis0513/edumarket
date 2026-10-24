@@ -30,30 +30,50 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $tipo = ($_POST["tipo"] ?? "") === "intercambio" ? "intercambio" : "venta";
     $precio = $tipo === "intercambio" ? 0 : (float)($_POST["precio"] ?? 0);
     $telefono = trim($_POST["telefono_contacto"] ?? "");
-    $foto = trim($_POST["foto_url"] ?? "");
     $id_categoria = (int)($_POST["id_categoria"] ?? 0);
-    $id_institucion = (int)($_POST["id_institucion"] ?? 0);
     $estado = ($_POST["estado"] ?? "disponible") === "entregado" ? "entregado" : "disponible";
-
-    if ($titulo === "" || $telefono === "" || $id_categoria <= 0 || $id_institucion <= 0) {
-        $error = "Completa título, teléfono, categoría y colegio.";
-    } elseif ($tipo === "venta" && $precio <= 0) {
-        $error = "El precio debe ser mayor a 0 en venta.";
+    $colegioModo = ($_POST["colegio_modo"] ?? "lista") === "nuevo" ? "nuevo" : "lista";
+    $id_institucion = 0;
+    if ($colegioModo === "nuevo") {
+        $id_institucion = resolverInstitucion($mysqli, 0, $_POST["colegio_nuevo"] ?? "");
     } else {
-        if ($idEdit > 0) {
-            $st = $mysqli->prepare("UPDATE articulo SET titulo=?,descripcion=?,precio=?,tipo=?,estado=?,telefono_contacto=?,foto_url=?,id_categoria=?,id_institucion=? WHERE id_articulo=? AND id_usuario=?");
-            $st->bind_param("ssdssssiiii", $titulo, $descripcion, $precio, $tipo, $estado, $telefono, $foto, $id_categoria, $id_institucion, $idEdit, $uid);
-            $st->execute();
-            guardarMensaje("Artículo actualizado.");
+        $id_institucion = resolverInstitucion($mysqli, (int)($_POST["id_institucion"] ?? 0), "");
+    }
+
+    $foto = $art["foto_url"] ?? "";
+    $uploadError = null;
+    $subida = subirFotoArticulo($_FILES["foto"] ?? [], $uploadError);
+    if ($subida === false) {
+        $error = $uploadError;
+    } elseif ($subida !== null) {
+        $foto = $subida;
+    }
+
+    if ($error === "") {
+        if ($titulo === "" || $telefono === "" || $id_categoria <= 0 || $id_institucion <= 0) {
+            $error = "Completa título, teléfono, categoría y colegio.";
+            if ($colegioModo === "nuevo" && trim($_POST["colegio_nuevo"] ?? "") === "") {
+                $error = "Escribe el nombre del colegio nuevo o elige uno de la lista.";
+            }
+        } elseif ($tipo === "venta" && $precio <= 0) {
+            $error = "El precio debe ser mayor a 0 en venta.";
         } else {
-            $estado = "disponible";
-            $st = $mysqli->prepare("INSERT INTO articulo (titulo,descripcion,precio,tipo,estado,telefono_contacto,foto_url,id_categoria,id_institucion,id_usuario) VALUES (?,?,?,?,?,?,?,?,?,?)");
-            $st->bind_param("ssdssssiii", $titulo, $descripcion, $precio, $tipo, $estado, $telefono, $foto, $id_categoria, $id_institucion, $uid);
-            $st->execute();
-            guardarMensaje("Artículo publicado. ¡Listo para el catálogo!");
+            if ($idEdit > 0) {
+                $st = $mysqli->prepare("UPDATE articulo SET titulo=?,descripcion=?,precio=?,tipo=?,estado=?,telefono_contacto=?,foto_url=?,id_categoria=?,id_institucion=? WHERE id_articulo=? AND id_usuario=?");
+                $st->bind_param("ssdssssiiii", $titulo, $descripcion, $precio, $tipo, $estado, $telefono, $foto, $id_categoria, $id_institucion, $idEdit, $uid);
+                $st->execute();
+                guardarMensaje("Artículo actualizado.");
+            } else {
+                $estado = "disponible";
+                $st = $mysqli->prepare("INSERT INTO articulo (titulo,descripcion,precio,tipo,estado,telefono_contacto,foto_url,id_categoria,id_institucion,id_usuario) VALUES (?,?,?,?,?,?,?,?,?,?)");
+                $st->bind_param("ssdssssiii", $titulo, $descripcion, $precio, $tipo, $estado, $telefono, $foto, $id_categoria, $id_institucion, $uid);
+                $st->execute();
+                guardarMensaje("Artículo publicado. ¡Listo para el catálogo!");
+            }
+            // Recargar lista de colegios por si se creó uno nuevo
+            header("Location: mis_publicaciones.php");
+            exit;
         }
-        header("Location: mis_publicaciones.php");
-        exit;
     }
 }
 
@@ -61,6 +81,9 @@ $v = function ($k, $d = "") use ($art) {
     if ($_SERVER["REQUEST_METHOD"] === "POST") return $_POST[$k] ?? $d;
     return $art[$k] ?? $d;
 };
+$colegioModoActual = ($_SERVER["REQUEST_METHOD"] === "POST")
+    ? ((($_POST["colegio_modo"] ?? "") === "nuevo") ? "nuevo" : "lista")
+    : "lista";
 
 require __DIR__ . "/includes/header.php";
 ?>
@@ -75,7 +98,7 @@ require __DIR__ . "/includes/header.php";
 
   <div class="panel form-panel">
     <?php if ($error): ?><p class="form-error"><?= e($error) ?></p><?php endif; ?>
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
       <div class="campo">
         <label for="titulo">Título</label>
         <input id="titulo" name="titulo" required maxlength="200" placeholder="Ej. Maleta azul con ruedas"
@@ -112,32 +135,64 @@ require __DIR__ . "/includes/header.php";
         <input id="telefono_contacto" name="telefono_contacto" required placeholder="3001234567"
                value="<?= e($v('telefono_contacto', $_SESSION['usuario']['telefono'] ?? '')) ?>">
       </div>
+
       <div class="campo">
-        <label for="foto_url">Ruta o URL de foto</label>
-        <input id="foto_url" name="foto_url" placeholder="img/maleta-1.jpg"
-               value="<?= e($v('foto_url')) ?>">
-        <p class="muted" style="margin-top:.35rem;font-size:.82rem;">Opcional. Ejemplos locales: img/libros-1.jpg, img/uniforme-1.jpg, img/maleta-2.jpg</p>
-      </div>
-      <div class="form-row">
-        <div class="campo">
-          <label for="id_categoria">Categoría</label>
-          <select id="id_categoria" name="id_categoria" required>
-            <option value="">Seleccionar</option>
-            <?php foreach ($cats as $c): ?>
-              <option value="<?= (int)$c['id_categoria'] ?>" <?= (int)$v('id_categoria')===(int)$c['id_categoria']?'selected':'' ?>><?= e($c['nombre']) ?></option>
-            <?php endforeach; ?>
-          </select>
+        <label for="foto">Foto del artículo</label>
+        <div class="upload-box">
+          <input id="foto" type="file" name="foto" accept="image/jpeg,image/png,image/webp,image/gif">
+          <p class="muted" style="margin-top:.45rem;font-size:.82rem;">JPG, PNG, WEBP o GIF · máx. 3 MB</p>
+          <?php
+            $fotoActual = trim((string)$v('foto_url', $art['foto_url'] ?? ''));
+            if ($fotoActual !== ""):
+          ?>
+            <div class="upload-preview">
+              <img src="<?= e($fotoActual) ?>" alt="Vista previa">
+              <span class="muted">Foto actual<?= $idEdit ? ' (sube otra para reemplazarla)' : '' ?></span>
+            </div>
+          <?php endif; ?>
         </div>
-        <div class="campo">
-          <label for="id_institucion">Colegio</label>
-          <select id="id_institucion" name="id_institucion" required>
-            <option value="">Seleccionar</option>
+      </div>
+
+      <div class="campo">
+        <label for="id_categoria">Categoría</label>
+        <select id="id_categoria" name="id_categoria" required>
+          <option value="">Seleccionar</option>
+          <?php foreach ($cats as $c): ?>
+            <option value="<?= (int)$c['id_categoria'] ?>" <?= (int)$v('id_categoria')===(int)$c['id_categoria']?'selected':'' ?>><?= e($c['nombre']) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+
+      <fieldset class="colegio-fieldset">
+        <legend>Colegio</legend>
+        <div class="colegio-tabs" role="tablist">
+          <label class="colegio-tab">
+            <input type="radio" name="colegio_modo" value="lista" <?= $colegioModoActual==='lista'?'checked':'' ?>>
+            Elegir existente
+          </label>
+          <label class="colegio-tab">
+            <input type="radio" name="colegio_modo" value="nuevo" <?= $colegioModoActual==='nuevo'?'checked':'' ?>>
+            Crear nuevo
+          </label>
+        </div>
+        <div class="campo" id="bloque-lista" style="<?= $colegioModoActual==='nuevo'?'display:none':'' ?>">
+          <label for="id_institucion">Colegios registrados</label>
+          <select id="id_institucion" name="id_institucion">
+            <option value="">Seleccionar colegio</option>
             <?php foreach ($insts as $i): ?>
               <option value="<?= (int)$i['id_institucion'] ?>" <?= (int)$v('id_institucion')===(int)$i['id_institucion']?'selected':'' ?>><?= e($i['nombre']) ?></option>
             <?php endforeach; ?>
           </select>
         </div>
-      </div>
+        <div class="campo" id="bloque-nuevo" style="<?= $colegioModoActual==='lista'?'display:none':'' ?>">
+          <label for="colegio_nuevo">Nombre del colegio</label>
+          <input id="colegio_nuevo" name="colegio_nuevo" maxlength="150"
+                 placeholder="Ej. Colegio Nuevo Horizonte"
+                 value="<?= e($_POST['colegio_nuevo'] ?? '') ?>">
+          <p class="muted" style="margin-top:.35rem;font-size:.82rem;">Si el nombre ya existe, se reutiliza (sin duplicar).</p>
+        </div>
+      </fieldset>
+
       <div class="acciones acciones-form">
         <button class="btn btn-primary" type="submit"><?= $idEdit ? "Guardar cambios" : "Publicar ahora" ?></button>
         <a class="btn btn-ghost" href="mis_publicaciones.php">Cancelar</a>
@@ -148,7 +203,7 @@ require __DIR__ . "/includes/header.php";
 <script>
 const tipo = document.getElementById('tipo');
 const precio = document.getElementById('precio');
-function sync() {
+function syncTipo() {
   if (tipo.value === 'intercambio') {
     precio.value = '0';
     precio.readOnly = true;
@@ -158,7 +213,17 @@ function sync() {
     precio.style.opacity = '1';
   }
 }
-tipo.addEventListener('change', sync);
-sync();
+tipo.addEventListener('change', syncTipo);
+syncTipo();
+
+const bloqueLista = document.getElementById('bloque-lista');
+const bloqueNuevo = document.getElementById('bloque-nuevo');
+document.querySelectorAll('input[name="colegio_modo"]').forEach(function (r) {
+  r.addEventListener('change', function () {
+    const esNuevo = this.value === 'nuevo';
+    bloqueLista.style.display = esNuevo ? 'none' : '';
+    bloqueNuevo.style.display = esNuevo ? '' : 'none';
+  });
+});
 </script>
 <?php require __DIR__ . "/includes/footer.php"; ?>

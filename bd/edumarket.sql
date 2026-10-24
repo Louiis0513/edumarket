@@ -19,17 +19,19 @@ CREATE TABLE usuario (
   email VARCHAR(150) NOT NULL UNIQUE,
   nombre VARCHAR(120) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
-  telefono VARCHAR(20) DEFAULT NULL
+  telefono VARCHAR(20) DEFAULT NULL,
+  es_admin TINYINT(1) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE categoria (
   id_categoria INT AUTO_INCREMENT PRIMARY KEY,
-  nombre VARCHAR(80) NOT NULL
+  nombre VARCHAR(80) NOT NULL UNIQUE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE institucion (
   id_institucion INT AUTO_INCREMENT PRIMARY KEY,
-  nombre VARCHAR(150) NOT NULL
+  nombre VARCHAR(150) NOT NULL,
+  UNIQUE KEY uq_institucion_nombre (nombre)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE articulo (
@@ -51,20 +53,29 @@ CREATE TABLE articulo (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Usuarios demo (todos: Admin123!)
--- admin@demo.com / Admin123!
+-- admin@demo.com / Admin123!  (administrador)
 -- maria@demo.com / Admin123!
 -- carlos@demo.com / Admin123!
-INSERT INTO usuario (email, nombre, password_hash, telefono) VALUES
-('admin@demo.com', 'Admin EduMarket', '$2y$10$EAW37Su9xX/ARqasc0NJBOp1MDm0o5ZJ.Y46MLlwjkRifGBat1AN.', '3001234567'),
-('maria@demo.com', 'María López', '$2y$10$EAW37Su9xX/ARqasc0NJBOp1MDm0o5ZJ.Y46MLlwjkRifGBat1AN.', '3109876543'),
-('carlos@demo.com', 'Carlos Ramírez', '$2y$10$EAW37Su9xX/ARqasc0NJBOp1MDm0o5ZJ.Y46MLlwjkRifGBat1AN.', '3205558899');
+INSERT INTO usuario (email, nombre, password_hash, telefono, es_admin) VALUES
+('admin@demo.com', 'Admin EduMarket', '$2y$10$EAW37Su9xX/ARqasc0NJBOp1MDm0o5ZJ.Y46MLlwjkRifGBat1AN.', '3001234567', 1),
+('maria@demo.com', 'María López', '$2y$10$EAW37Su9xX/ARqasc0NJBOp1MDm0o5ZJ.Y46MLlwjkRifGBat1AN.', '3109876543', 0),
+('carlos@demo.com', 'Carlos Ramírez', '$2y$10$EAW37Su9xX/ARqasc0NJBOp1MDm0o5ZJ.Y46MLlwjkRifGBat1AN.', '3205558899', 0);
 
 INSERT INTO categoria (nombre) VALUES
 ('Libros'),
 ('Uniformes'),
 ('Maletas'),
 ('Cartucheras'),
-('Útiles');
+('Útiles'),
+('Cuadernos'),
+('Calzado'),
+('Calculadoras'),
+('Deportes'),
+('Arte y manualidades'),
+('Tecnología'),
+('Instrumentos musicales'),
+('Accesorios'),
+('Otros');
 
 INSERT INTO institucion (nombre) VALUES
 ('Liceo Gran Virrey'),
@@ -88,7 +99,7 @@ INSERT INTO articulo (titulo, descripcion, precio, tipo, estado, telefono_contac
 ('Cartuchera con útiles básicos', 'Incluye lápices HB, borradores, regla y tajalápiz. Lista para el colegio.', 12000.00, 'venta', 'disponible', '3109876543', 'img/cartuchera-2.jpg', 4, 3, 2),
 ('Cartuchera de jean artesanal', 'Cartuchera de jean con cierre funcional y bolsillo interno.', 10000.00, 'venta', 'disponible', '3001234567', 'img/cartuchera-1.jpg', 4, 1, 1),
 ('Set de geometría completo', 'Compás, transportador y escuadras en estuche rígido. Casi nuevo.', 8000.00, 'venta', 'disponible', '3001234567', 'img/geometria-1.jpg', 5, 1, 1),
-('Cuadernos cuadriculados x5', 'Paquete de 5 cuadernos 100 hojas, sin usar. Marca escolar estándar.', 15000.00, 'venta', 'disponible', '3205558899', 'img/cuadernos-1.jpg', 5, 3, 3),
-('Kit de colores y marcadores', 'Caja de colores + 6 marcadores. Perfectos para artes y proyectos.', 14000.00, 'venta', 'disponible', '3109876543', 'img/utiles-2.jpg', 5, 7, 2),
+('Cuadernos cuadriculados x5', 'Paquete de 5 cuadernos 100 hojas, sin usar. Marca escolar estándar.', 15000.00, 'venta', 'disponible', '3205558899', 'img/cuadernos-1.jpg', 6, 3, 3),
+('Kit de colores y marcadores', 'Caja de colores + 6 marcadores. Perfectos para artes y proyectos.', 14000.00, 'venta', 'disponible', '3109876543', 'img/utiles-2.jpg', 10, 7, 2),
 ('Útiles mixtos para primaria', 'Regla, tijeras punta roma, pegante y lápices. Todo en buen estado.', 9000.00, 'venta', 'disponible', '3205558899', 'img/utiles-1.jpg', 5, 6, 3),
 ('Libro Ciencias Naturales 8°', 'Texto de ciencias 8°, subrayados leves. Entregado el año pasado (demo histórico).', 20000.00, 'venta', 'entregado', '3001234567', 'img/libros-1.jpg', 1, 1, 1);

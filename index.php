@@ -10,6 +10,15 @@ $catFotos = [
     "Maletas" => "img/maleta-1.jpg",
     "Cartucheras" => "img/cartuchera-2.jpg",
     "Útiles" => "img/utiles-1.jpg",
+    "Cuadernos" => "img/cuadernos-1.jpg",
+    "Calzado" => "img/uniforme-1.jpg",
+    "Calculadoras" => "img/utiles-1.jpg",
+    "Deportes" => "img/sudadera-1.jpg",
+    "Arte y manualidades" => "img/utiles-2.jpg",
+    "Tecnología" => "img/hero-utiles.jpg",
+    "Instrumentos musicales" => "img/hero-utiles.jpg",
+    "Accesorios" => "img/cartuchera-1.jpg",
+    "Otros" => "img/hero-utiles.jpg",
 ];
 
 $destacados = $mysqli->query(
@@ -19,7 +28,7 @@ $destacados = $mysqli->query(
      JOIN institucion i ON i.id_institucion = a.id_institucion
      WHERE a.estado = 'disponible'
      ORDER BY a.id_articulo DESC
-     LIMIT 6"
+     LIMIT 4"
 )->fetch_all(MYSQLI_ASSOC);
 
 require __DIR__ . "/includes/header.php";

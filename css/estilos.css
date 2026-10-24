@@ -636,6 +636,131 @@ textarea { min-height: 110px; resize: vertical; }
   color: var(--muted);
 }
 
+/* ——— Paginación ——— */
+.paginacion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: .65rem;
+  margin-top: 1.5rem;
+}
+.paginacion-info {
+  font-weight: 650;
+  color: var(--muted);
+  font-size: .92rem;
+}
+.paginacion .btn.disabled,
+.btn.disabled {
+  opacity: .45;
+  pointer-events: none;
+  cursor: default;
+}
+
+/* ——— Upload foto ——— */
+.upload-box {
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  background: #fffaf8;
+}
+.upload-box input[type="file"] {
+  padding: .55rem;
+  background: white;
+  min-height: auto;
+}
+.upload-preview {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin-top: .85rem;
+}
+.upload-preview img {
+  width: 88px;
+  height: 66px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+
+/* ——— Colegio crear / lista ——— */
+.colegio-fieldset {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.05rem .35rem;
+  margin-bottom: 1rem;
+  background: #fffaf8;
+}
+.colegio-fieldset legend {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: .95rem;
+  padding: 0 .35rem;
+  color: var(--ink);
+}
+.colegio-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-bottom: .85rem;
+}
+.colegio-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  margin: 0;
+  padding: .5rem .85rem;
+  border-radius: 999px;
+  background: white;
+  border: 1px solid var(--line);
+  font-size: .88rem;
+  font-weight: 650;
+  color: var(--muted);
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+.colegio-tab:has(input:checked) {
+  background: var(--sand);
+  color: var(--coral-deep);
+  border-color: var(--line-strong);
+}
+.colegio-tab input { width: auto; min-height: auto; margin: 0; accent-color: var(--coral); }
+
+/* ——— Admin ——— */
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .85rem;
+  margin-bottom: 1.5rem;
+}
+.stat-card {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+}
+.stat-card strong {
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  color: var(--coral-deep);
+}
+.stat-card span { color: var(--muted); font-size: .88rem; font-weight: 600; }
+.admin-filters {
+  grid-template-columns: 1.6fr minmax(0, 1fr) auto;
+}
+.admin-inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+  align-items: end;
+}
+.admin-pub .pub-actions { max-width: 20rem; }
+
 /* ——— Detail ——— */
 .detail {
   display: grid;
@@ -838,6 +963,9 @@ th {
 }
 
 @media (max-width: 900px) {
+  .admin-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-filters { grid-template-columns: 1fr 1fr; }
+  .admin-filters .filters-actions { grid-column: 1 / -1; }
   .nav-toggle { display: flex; }
   .nav-links {
     display: none;
@@ -935,6 +1063,12 @@ th {
 
   .results-meta { flex-wrap: wrap; }
   .auth-card h1 { font-size: 1.35rem; }
+  .admin-stats { grid-template-columns: 1fr 1fr; }
+  .admin-filters { grid-template-columns: 1fr; }
+  .admin-inline-form { flex-direction: column; align-items: stretch; }
+  .admin-inline-form .btn { width: 100%; }
+  .paginacion { gap: .45rem; }
+  .paginacion .btn { flex: 1 1 auto; }
 }
 
 @media (max-width: 380px) {

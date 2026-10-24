@@ -11,38 +11,56 @@ $q = trim($_GET["q"] ?? "");
 $cats = $mysqli->query("SELECT id_categoria, nombre FROM categoria ORDER BY nombre")->fetch_all(MYSQLI_ASSOC);
 $insts = $mysqli->query("SELECT id_institucion, nombre FROM institucion ORDER BY nombre")->fetch_all(MYSQLI_ASSOC);
 
-$sql = "SELECT a.*, c.nombre AS categoria, i.nombre AS institucion
- FROM articulo a
- JOIN categoria c ON c.id_categoria = a.id_categoria
- JOIN institucion i ON i.id_institucion = a.id_institucion
- WHERE a.estado = 'disponible'";
+$where = " WHERE a.estado = 'disponible'";
 $types = "";
 $params = [];
 
-if ($idCat > 0) { $sql .= " AND a.id_categoria=?"; $types .= "i"; $params[] = $idCat; }
-if ($idInst > 0) { $sql .= " AND a.id_institucion=?"; $types .= "i"; $params[] = $idInst; }
+if ($idCat > 0) { $where .= " AND a.id_categoria=?"; $types .= "i"; $params[] = $idCat; }
+if ($idInst > 0) { $where .= " AND a.id_institucion=?"; $types .= "i"; $params[] = $idInst; }
 if ($tipoFiltro === "venta" || $tipoFiltro === "intercambio") {
-    $sql .= " AND a.tipo=?"; $types .= "s"; $params[] = $tipoFiltro;
+    $where .= " AND a.tipo=?"; $types .= "s"; $params[] = $tipoFiltro;
 }
 if ($q !== "") {
-    $sql .= " AND (a.titulo LIKE ? OR a.descripcion LIKE ?)";
+    $where .= " AND (a.titulo LIKE ? OR a.descripcion LIKE ?)";
     $types .= "ss";
     $like = "%{$q}%";
     $params[] = $like;
     $params[] = $like;
 }
-$sql .= " ORDER BY a.id_articulo DESC";
 
+$countSql = "SELECT COUNT(*) AS total FROM articulo a" . $where;
 if ($types) {
-    $st = $mysqli->prepare($sql);
-    $st->bind_param($types, ...$params);
-    $st->execute();
-    $arts = $st->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stCount = $mysqli->prepare($countSql);
+    $stCount->bind_param($types, ...$params);
+    $stCount->execute();
+    $total = (int)$stCount->get_result()->fetch_assoc()["total"];
 } else {
-    $arts = $mysqli->query($sql)->fetch_all(MYSQLI_ASSOC);
+    $total = (int)$mysqli->query($countSql)->fetch_assoc()["total"];
 }
 
-$total = count($arts);
+$pag = calcularPaginacion($total, 8);
+$queryKeep = [
+    "categoria" => $idCat ?: null,
+    "institucion" => $idInst ?: null,
+    "tipo" => $tipoFiltro !== "" ? $tipoFiltro : null,
+    "q" => $q !== "" ? $q : null,
+];
+$queryKeep = array_filter($queryKeep, fn($v) => $v !== null && $v !== "");
+
+$sql = "SELECT a.*, c.nombre AS categoria, i.nombre AS institucion
+ FROM articulo a
+ JOIN categoria c ON c.id_categoria = a.id_categoria
+ JOIN institucion i ON i.id_institucion = a.id_institucion"
+ . $where
+ . " ORDER BY a.id_articulo DESC LIMIT ? OFFSET ?";
+
+$typesPage = $types . "ii";
+$paramsPage = array_merge($params, [$pag["por_pagina"], $pag["offset"]]);
+$st = $mysqli->prepare($sql);
+$st->bind_param($typesPage, ...$paramsPage);
+$st->execute();
+$arts = $st->get_result()->fetch_all(MYSQLI_ASSOC);
+
 require __DIR__ . "/includes/header.php";
 ?>
 <main class="contenedor">
@@ -130,6 +148,7 @@ require __DIR__ . "/includes/header.php";
         </article>
       <?php endforeach; ?>
     </div>
+    <?= renderPaginacion($pag, $queryKeep) ?>
   <?php endif; ?>
 </main>
 <?php require __DIR__ . "/includes/footer.php"; ?>
